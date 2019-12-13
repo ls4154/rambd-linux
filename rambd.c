@@ -1,5 +1,6 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
+#include <linux/version.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/vmalloc.h>
@@ -8,7 +9,7 @@
 #include <linux/types.h>
 
 static const int rambd_sector_size = 512;
-static int rambd_sectors = 1024 * 1024; /* default size 512 MiB */
+static int rambd_sectors = 1024 * 1024; /* default size 512 MB */
 module_param(rambd_sectors, int, 0);
 
 static int major;
@@ -36,12 +37,17 @@ static const struct block_device_operations rambd_fops = {
 
 static blk_qc_t rambd_make_request(struct request_queue *q, struct bio *bio)
 {
-	struct rambd_device *rambd = bio->bi_disk->private_data;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+	struct gendisk *disk = bio->bi_bdev->bd_disk;
+#else
+	struct gendisk *disk = bio->bi_disk;
+#endif
+	struct rambd_device *rambd = disk->private_data;
 	struct bio_vec bvec;
 	struct bvec_iter iter;
 	void *mem;
 
-	if (bio_end_sector(bio) > get_capacity(bio->bi_disk)) {
+	if (bio_end_sector(bio) > get_capacity(disk)) {
 		bio_io_error(bio);
 		return BLK_QC_T_NONE;
 	}
@@ -51,7 +57,11 @@ static blk_qc_t rambd_make_request(struct request_queue *q, struct bio *bio)
 		if (mem == NULL) {
 			printk("rambd: kmap failed\n");
 		}
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0)
+		if (bio_data_dir(bio) == WRITE) {
+#else
 		if (op_is_write(bio_op(bio))) {
+#endif
 			memcpy(rambd->data + bio->bi_iter.bi_sector * rambd_sector_size, mem + bvec.bv_offset, bvec.bv_len);
 		} else {
 			memcpy(mem + bvec.bv_offset, rambd->data + bio->bi_iter.bi_sector * rambd_sector_size, bvec.bv_len);
