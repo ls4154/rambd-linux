@@ -8,9 +8,9 @@
 #include <linux/errno.h>
 #include <linux/types.h>
 
-static const int rambd_sector_size = 512;
-static int rambd_sectors = 1024 * 1024; /* default size 512 MB */
-module_param(rambd_sectors, int, 0);
+static const unsigned long rambd_sector_size = 512;
+static unsigned long rambd_sectors = 1024 * 1024; /* default device size 512 MiB */
+module_param(rambd_sectors, ulong, 0);
 
 static int major;
 static const char *rambd_name = "rambd";
