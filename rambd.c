@@ -62,9 +62,9 @@ static blk_qc_t rambd_make_request(struct request_queue *q, struct bio *bio)
 #else
 		if (op_is_write(bio_op(bio))) {
 #endif
-			memcpy(rambd->data + bio->bi_iter.bi_sector * rambd_sector_size, mem + bvec.bv_offset, bvec.bv_len);
+			memcpy(rambd->data + iter.bi_sector * rambd_sector_size, mem + bvec.bv_offset, bvec.bv_len);
 		} else {
-			memcpy(mem + bvec.bv_offset, rambd->data + bio->bi_iter.bi_sector * rambd_sector_size, bvec.bv_len);
+			memcpy(mem + bvec.bv_offset, rambd->data + iter.bi_sector * rambd_sector_size, bvec.bv_len);
 		}
 		kunmap_atomic(mem);
 	}
